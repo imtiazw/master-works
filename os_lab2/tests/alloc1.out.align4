@@ -1,0 +1,19 @@
+Memory : [0 511] (512 bytes)
+Free block : 16 bytes; busy block : 4 bytes.
+Aligned free block : 16 bytes; Aligned busy block : 4 bytes.
+Size of a pointer : 8 bytes; 
+ALLOC at : 4 (20 byte(s))
+Begin of free block list :
+Free block at address 24, size 488
+ALLOC at : 28 (20 byte(s))
+Begin of free block list :
+Free block at address 48, size 464
+ALLOC at : 52 (10 byte(s))
+Begin of free block list :
+Free block at address 64, size 448
+ALLOC at : 68 (15 byte(s))
+Begin of free block list :
+Free block at address 84, size 428
+ALLOC at : 88 (20 byte(s))
+Begin of free block list :
+Free block at address 108, size 404
