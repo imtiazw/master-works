@@ -1,0 +1,217 @@
+Clase filesys.cc
+
+
+#ifdef CHANGED
+#define NumPathNamesMax 	10
+#define SizePathNameMax		100
+#endif
+
+#ifdef CHANGED
+
+
+/* ----------------------------------------------------------------
+		path directory name already exist
+
+------------------------------------------------------------------ */
+
+bool FileSystem::Exist(char * name) {
+
+   Directory *directory = new Directory(NumDirEntries); 
+    Directory *currentDir = directory->FetchFrom(directoryFile);
+    int dirSector = currentDir->Find(name);
+    if (dirSector == -1) {
+        delete currentDir;
+        return false;
+    }
+    delete currentDir;
+    return true;
+}
+
+
+//----------------------------------------------------------------------
+// FileSystem::MakeDirectory
+// 	Create New Directory
+//----------------------------------------------------------------------
+bool FileSystem::MakeDirectory(char *name) {
+
+    bool error = false;
+
+    Directory *directory = new Directory(NumDirEntries);      
+    int originalSector= directory->FetchFrom(directoryFile)->table[0].sector; // make directory in the current sector(0) 
+
+    Directory *currentDir
+    Directory *directory = new Directory(NumDirEntries);      
+    currentDir = directory->FetchFrom(directoryFile);
+
+
+    if(strlen(name) > SizePathNameMax) {
+        printf("name of directory too long\n");
+        error = true;
+    }
+
+    if (!error && currentDir->Find(name) != -1) {
+       printf(" A Directory alredy exist with the name: %s\n",
+                                                 name);
+       error = true;
+    }
+
+    if (!error && currentDir->IsFull()) {
+        printf("The current Directory is full can't create\n");
+        error = true;
+    }
+
+Directory *directory;
+    BitMap *freeMap;
+    FileHeader *hdr;
+    int sector;
+    bool success;
+DEBUG('f', "Creating file %s, size %d\n", name, initialSize);
+
+    directory = new Directory(NumDirEntries);
+    directory->FetchFrom(directoryFile);
+
+        freeMap = new BitMap(NumSectors);
+        freeMap->FetchFrom(freeMapFile);
+        sector = freeMap->Find();	// find a sector to hold the file header
+    	if (sector == -1) 		
+            success = FALSE;		// no free block for file header 
+        else if (!directory->Add(name, sector))
+            success = FALSE;	// no space in directory
+	else {
+    	    hdr = new FileHeader;
+	    if (!hdr->Allocate(freeMap, -1* DirectoryFileSize))
+            	success = FALSE;	// no space on disk for data
+	    else {	
+	    	success = TRUE;
+		// everthing worked, flush all changes back to disk
+    	    	hdr->WriteBack(sector); 
+		 // creating directory with sector and parent
+        Directory *newDir = new Directory(NumDirEntries,sector, originalSector);	
+//	Open Directory to be able to save files 
+        OpenFile *newDirFile = new OpenFile(sector);
+ // Write in Disk
+        newDir->WriteBack(newDirFile);
+        // save actual directory 
+        currentDir->WriteBack(directoryFile);
+    	    	directory->WriteBack(directoryFile);
+    	    	freeMap->WriteBack(freeMapFile);
+	    }
+            delete hdr;
+	    delete sector;
+	}
+        delete freeMap;
+    delete newDir;
+    delete directory;
+delete newDirFile;
+
+    return success;
+}
+
+
+-------------------------------------------------------------------------------------
+
+
+/* ----------------------------------------------------------------
+	path directory by the name, validating path and passing the number of directories names
+
+------------------------------------------------------------------ */
+void CreatePath(char *PathName, char** args, int *NumArgs)
+{
+    char *buf_args[NumPathNamesMax];
+    char **cp;
+    char *wbuf;
+    int i, j;
+
+    wbuf=PathName;
+    buf_args[0]=PathName;
+    args[0] = PathName;
+
+    for(cp=buf_args; (*cp=strsep(&wbuf, "/")) != NULL ;){
+        if ((*cp != '\0') && (++cp >= &buf_args[NumPathNamesMax]))		//Separeting the names in the path  and just
+            break;
+    }
+
+
+    for (j=i=0; buf_args[i]!=NULL; i++){
+        if(strlen(buf_args[i])>0)
+            args[j++]=buf_args[i];
+    }
+
+    *NumArgs=j;
+    args[j]=NULL;
+}
+
+
+--------------------------------------------------------------
+
+int Directory::getSector(int position) {
+    return this->table[position].sector;
+}
+
+int Directory::getCurrentSector() {
+    return this->getSector(0);
+}
+
+int Directory::getParentSector() {
+    return this->getSector(1);
+}
+
+int FileSystem::MoveToRoot() {
+    return this->MoveToSector(1);
+}
+
+int FileSystem::MoveToLastDir(char * name)
+{
+    if (strcmp(name, "/") == 0) {
+        this->MoveToRoot();
+        strcpy(name, "\0");
+        return 0;
+    }
+    if (name[0] == '/') {
+        this->MoveToRoot();
+    }
+    char *paths[MAX_PATH_DEPTH];
+    int npath;
+    int i;
+    parse_path(name, paths, &npath);
+    if (npath > 0) {
+        for(i = 0; i < npath-1; i++) {
+            // On ignore les deplacement dans "." pour optimiser
+            if (strcmp(paths[i], ".") != 0) {
+                if (this->MoveToDir(paths[i]) != 0) {
+                    return -1;
+                }
+            }
+        }
+        strcpy(name, paths[i]);
+    }
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
